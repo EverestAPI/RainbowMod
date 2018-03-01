@@ -85,6 +85,21 @@
     <EmbeddedResource Include="Content\Dialog\English.txt">
       <LogicalName>Content\Dialog\English.txt</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="Content\Graphics\Atlases\Gameplay\characters\player\foxbangs00.png">
+      <LogicalName>Content\Graphics\Atlases\Gameplay\characters\player\foxbangs00.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Content\Graphics\Atlases\Gameplay\characters\player\foxbangs01.png">
+      <LogicalName>Content\Graphics\Atlases\Gameplay\characters\player\foxbangs01.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Content\Graphics\Atlases\Gameplay\characters\player\foxbangs02.png">
+      <LogicalName>Content\Graphics\Atlases\Gameplay\characters\player\foxbangs02.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Content\Graphics\Atlases\Gameplay\characters\player\foxhair00.png">
+      <LogicalName>Content\Graphics\Atlases\Gameplay\characters\player\foxhair00.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Content\Graphics\Atlases\Gameplay\characters\player\foxhair01.png">
+      <LogicalName>Content\Graphics\Atlases\Gameplay\characters\player\foxhair01.png</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

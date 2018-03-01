@@ -1,5 +1,6 @@
 ﻿using Celeste.Mod;
 using Microsoft.Xna.Framework;
+using Monocle;
 using MonoMod.Detour;
 using System;
 using System.Collections.Generic;
@@ -19,8 +20,12 @@ namespace Celeste.Mod.Rainbow {
         // The methods we want to hook.
         private readonly static MethodInfo m_GetHairColor = typeof(PlayerHair).GetMethod("GetHairColor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         private readonly static MethodInfo m_GetTrailColor = typeof(Player).GetMethod("GetTrailColor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        private readonly static MethodInfo m_GetHairTexture = typeof(PlayerHair).GetMethod("GetHairTexture", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         private static int trailIndex = 0;
+
+        private static List<MTexture> FoxBangs;
+        private static List<MTexture> FoxHair;
 
         public RainbowModule() {
             Instance = this;
@@ -32,12 +37,21 @@ namespace Celeste.Mod.Rainbow {
             // [trampoline] = [method we want to hook] .Detour< [signature] >( [replacement method] );
             orig_GetHairColor = m_GetHairColor.Detour<d_GetHairColor>(t_RainbowModule.GetMethod("GetHairColor"));
             orig_GetTrailColor = m_GetTrailColor.Detour<d_GetTrailColor>(t_RainbowModule.GetMethod("GetTrailColor"));
+            if (m_GetHairTexture != null) {
+                orig_GetHairTexture = m_GetHairTexture.Detour<d_GetHairTexture>(t_RainbowModule.GetMethod("GetHairTexture"));
+            }
+        }
+
+        public override void LoadContent() {
+            FoxBangs = GFX.Game.GetAtlasSubtextures("characters/player/foxbangs");
+            FoxHair = GFX.Game.GetAtlasSubtextures("characters/player/foxhair");
         }
 
         public override void Unload() {
             // Let's just hope that nothing else detoured this, as this is depth-based...
             RuntimeDetour.Undetour(m_GetHairColor);
             RuntimeDetour.Undetour(m_GetTrailColor);
+            RuntimeDetour.Undetour(m_GetHairTexture);
         }
 
         // The delegate tells MonoMod.Detour / RuntimeDetour about the method signature.
@@ -48,27 +62,68 @@ namespace Celeste.Mod.Rainbow {
         public static d_GetHairColor orig_GetHairColor;
         public static Color GetHairColor(PlayerHair self, int index) {
             Color colorOrig = orig_GetHairColor(self, index);
-            if (!Settings.Enabled || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
+            if (Settings.Mode == RainbowModMode.Off || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
                 return colorOrig;
 
-            float wave = self.GetWave() * 60f;
-            wave *= Settings.SpeedFactor;
-            Color colorRainbow = ColorFromHSV((index / (float) self.GetSprite().HairCount) * 180f + wave, 0.6f, 0.6f);
-            return new Color(
-                (colorOrig.R / 255f) * 0.3f + (colorRainbow.R / 255f) * 0.7f,
-                (colorOrig.G / 255f) * 0.3f + (colorRainbow.G / 255f) * 0.7f,
-                (colorOrig.B / 255f) * 0.3f + (colorRainbow.B / 255f) * 0.7f,
-                colorOrig.A
-            );
+            Color color = colorOrig;
+
+            if ((Settings.Mode & RainbowModMode.Fox) == RainbowModMode.Fox) {
+                Color colorFox;
+                if (index % 2 == 0) {
+                    colorFox = new Color(0.8f, 0.5f, 0.05f, 1f);
+                    color = new Color(
+                        (color.R / 255f) * 0.1f + (colorFox.R / 255f) * 0.9f,
+                        (color.G / 255f) * 0.05f + (colorFox.G / 255f) * 0.95f,
+                        (color.B / 255f) * 0.2f + (colorFox.B / 255f) * 0.8f,
+                        color.A
+                    );
+                } else {
+                    colorFox = new Color(0.1f, 0.05f, 0f, 1f);
+                    color = new Color(
+                        (color.R / 255f) * 0.1f + (colorFox.R / 255f) * 0.7f,
+                        (color.G / 255f) * 0.1f + (colorFox.G / 255f) * 0.7f,
+                        (color.B / 255f) * 0.1f + (colorFox.B / 255f) * 0.7f,
+                        color.A
+                    );
+                }
+            }
+
+            if ((Settings.Mode & RainbowModMode.Rainbow) == RainbowModMode.Rainbow) {
+                float wave = self.GetWave() * 60f;
+                wave *= Settings.RainbowSpeedFactor;
+                Color colorRainbow = ColorFromHSV((index / (float) self.GetSprite().HairCount) * 180f + wave, 0.6f, 0.6f);
+                color = new Color(
+                    (color.R / 255f) * 0.3f + (colorRainbow.R / 255f) * 0.7f,
+                    (color.G / 255f) * 0.3f + (colorRainbow.G / 255f) * 0.7f,
+                    (color.B / 255f) * 0.3f + (colorRainbow.B / 255f) * 0.7f,
+                    color.A
+                );
+            }
+
+            color.A = colorOrig.A;
+            return color;
         }
 
         public delegate Color d_GetTrailColor(Player self, bool wasDashB);
         public static d_GetTrailColor orig_GetTrailColor;
         public static Color GetTrailColor(Player self, bool wasDashB) {
-            if (!Settings.Enabled || self.Sprite.Mode == PlayerSpriteMode.Badeline || self.Hair == null)
+            if ((Settings.Mode & RainbowModMode.Rainbow) != RainbowModMode.Rainbow || self.Sprite.Mode == PlayerSpriteMode.Badeline || self.Hair == null)
                 return orig_GetTrailColor(self, wasDashB);
 
             return self.Hair.GetHairColor((trailIndex++) % self.Hair.GetSprite().HairCount);
+        }
+
+        public delegate MTexture d_GetHairTexture(PlayerHair self, int index);
+        public static d_GetHairTexture orig_GetHairTexture;
+        public static MTexture GetHairTexture(PlayerHair self, int index) {
+            MTexture orig = orig_GetHairTexture(self, index);
+            if ((Settings.Mode & RainbowModMode.Fox) != RainbowModMode.Fox || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
+                return orig;
+
+            if (index == 0)
+                return FoxBangs[self.GetSprite().HairFrame];
+
+            return FoxHair[index % FoxHair.Count];
         }
 
         // Conversion algorithms found randomly on the net - best source for HSV <-> RGB ever:tm:
