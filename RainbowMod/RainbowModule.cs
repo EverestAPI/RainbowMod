@@ -1,4 +1,5 @@
 ﻿using Celeste.Mod;
+using FMOD.Studio;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Detour;
@@ -31,6 +32,25 @@ namespace Celeste.Mod.Rainbow {
             Instance = this;
         }
 
+        public override void LoadSettings() {
+            base.LoadSettings();
+
+            bool updated = false;
+
+            if (Settings.FoxColorLight.A == 0) {
+                Settings.FoxColorLight = new Color(0.8f, 0.5f, 0.05f, 1f);
+                updated = true;
+            }
+            if (Settings.FoxColorDark.A == 0) {
+                Settings.FoxColorDark = new Color(0.1f, 0.05f, 0f, 1f);
+                updated = true;
+            }
+
+            if (updated) {
+                SaveSettings();
+            }
+        }
+
         public override void Load() {
             // Runtime hooks are quite different from static patches.
             Type t_RainbowModule = GetType();
@@ -54,6 +74,21 @@ namespace Celeste.Mod.Rainbow {
             RuntimeDetour.Undetour(m_GetHairTexture);
         }
 
+        public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
+            base.CreateModMenuSection(menu, inGame, snapshot);
+
+            if (inGame) {
+                menu.Add(new TextMenu.Button(Dialog.Clean("modoptions_rainbowmodule_reloadcolors")).Pressed(() => {
+                    // Temporarily store current settings, load new settings and replace colors.
+                    RainbowModuleSettings settings = Settings;
+                    LoadSettings();
+                    settings.FoxColorLight = Settings.FoxColorLight;
+                    settings.FoxColorDark = Settings.FoxColorDark;
+                    _Settings = settings;
+                }));
+            }
+        }
+
         // The delegate tells MonoMod.Detour / RuntimeDetour about the method signature.
         // Instance (non-static) methods must become static, which means we add "this" as the first argument.
         public delegate Color d_GetHairColor(PlayerHair self, int index);
@@ -70,7 +105,7 @@ namespace Celeste.Mod.Rainbow {
             if ((Settings.Mode & RainbowModMode.Fox) == RainbowModMode.Fox) {
                 Color colorFox;
                 if (index % 2 == 0) {
-                    colorFox = new Color(0.8f, 0.5f, 0.05f, 1f);
+                    colorFox = Settings.FoxColorLight;
                     color = new Color(
                         (color.R / 255f) * 0.1f + (colorFox.R / 255f) * 0.9f,
                         (color.G / 255f) * 0.05f + (colorFox.G / 255f) * 0.95f,
@@ -78,7 +113,7 @@ namespace Celeste.Mod.Rainbow {
                         color.A
                     );
                 } else {
-                    colorFox = new Color(0.1f, 0.05f, 0f, 1f);
+                    colorFox = Settings.FoxColorDark;
                     color = new Color(
                         (color.R / 255f) * 0.1f + (colorFox.R / 255f) * 0.7f,
                         (color.G / 255f) * 0.1f + (colorFox.G / 255f) * 0.7f,
