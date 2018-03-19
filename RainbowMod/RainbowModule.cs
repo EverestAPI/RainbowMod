@@ -99,13 +99,13 @@ namespace Celeste.Mod.Rainbow {
 
         public static object GetHairColor(HM hook, HM.OriginalMethod origM, HM.Parameters args) {
             // C# 7:
-            var (self, index) = args.As<PlayerHair, int>();
+            // var (self, index) = args.As<PlayerHair, int>();
             // C# 6:
-            // PlayerHair self = (PlayerHair) args.RawParams[0];
-            // int index = (int) args.RawParams[1];
+            PlayerHair self = (PlayerHair) args.RawParams[0];
+            int index = (int) args.RawParams[1];
 
             Color colorOrig = origM.As<Color>(args.RawParams);
-            if (Settings.Mode == RainbowModMode.Off || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
+            if (Settings.Mode == RainbowModMode.Off || !(self.Entity is Player) || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
                 return colorOrig;
 
             Color color = colorOrig;
@@ -149,10 +149,10 @@ namespace Celeste.Mod.Rainbow {
 
         public static object GetTrailColor(HM hook, HM.OriginalMethod origM, HM.Parameters args) {
             // C# 7:
-            var (self, wasDashB) = args.As<Player, bool>();
+            // var (self, wasDashB) = args.As<Player, bool>();
             // C# 6:
-            // Player self = (Player) args.RawParams[0];
-            // bool wasDashB = (bool) args.RawParams[1];
+            Player self = (Player) args.RawParams[0];
+            bool wasDashB = (bool) args.RawParams[1];
 
             if ((Settings.Mode & RainbowModMode.Rainbow) != RainbowModMode.Rainbow || self.Sprite.Mode == PlayerSpriteMode.Badeline || self.Hair == null)
                 return origM.As<Color>(args.RawParams);
@@ -162,13 +162,13 @@ namespace Celeste.Mod.Rainbow {
 
         public static MTexture GetHairTexture(HM hook, HM.OriginalMethod origM, HM.Parameters args) {
             // C# 7:
-            var (self, index) = args.As<PlayerHair, int>();
+            // var (self, index) = args.As<PlayerHair, int>();
             // C# 6:
-            // PlayerHair self = (PlayerHair) args.RawParams[0];
-            // int index = (int) args.RawParams[1];
+            PlayerHair self = (PlayerHair) args.RawParams[0];
+            int index = (int) args.RawParams[1];
 
             MTexture orig = origM.As<MTexture>(args.RawParams);
-            if ((Settings.Mode & RainbowModMode.Fox) != RainbowModMode.Fox || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
+            if ((Settings.Mode & RainbowModMode.Fox) != RainbowModMode.Fox || !(self.Entity is Player) || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
                 return orig;
 
             if (index == 0)
