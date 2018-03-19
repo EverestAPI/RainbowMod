@@ -62,7 +62,7 @@
     </Reference>
     <Reference Include="MonoMod, Version=18.3.6645.35750, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\HookedMethod.0.3.2-beta\lib\net45\MonoMod.exe</HintPath>
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Steamworks.NET">
       <HintPath>..\Everest\lib-stripped\Steamworks.NET.dll</HintPath>
