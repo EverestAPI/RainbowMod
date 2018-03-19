@@ -1,5 +1,7 @@
 ﻿using Celeste.Mod;
 using FMOD.Studio;
+using HookedMethod;
+using HM = HookedMethod.HookedMethod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Detour;
@@ -18,10 +20,9 @@ namespace Celeste.Mod.Rainbow {
         public override Type SettingsType => typeof(RainbowModuleSettings);
         public static RainbowModuleSettings Settings => (RainbowModuleSettings) Instance._Settings;
 
-        // The methods we want to hook.
-        private readonly static MethodInfo m_GetHairColor = typeof(PlayerHair).GetMethod("GetHairColor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        private readonly static MethodInfo m_GetTrailColor = typeof(Player).GetMethod("GetTrailColor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        private readonly static MethodInfo m_GetHairTexture = typeof(PlayerHair).GetMethod("GetHairTexture", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        private static Hook h_GetHairColor;
+        private static Hook h_GetTrailColor;
+        private static Hook h_GetHairTexture;
 
         private static int trailIndex = 0;
 
@@ -53,12 +54,22 @@ namespace Celeste.Mod.Rainbow {
 
         public override void Load() {
             // Runtime hooks are quite different from static patches.
-            Type t_RainbowModule = GetType();
-            // [trampoline] = [method we want to hook] .Detour< [signature] >( [replacement method] );
-            orig_GetHairColor = m_GetHairColor.Detour<d_GetHairColor>(t_RainbowModule.GetMethod("GetHairColor"));
-            orig_GetTrailColor = m_GetTrailColor.Detour<d_GetTrailColor>(t_RainbowModule.GetMethod("GetTrailColor"));
+            h_GetHairColor = new Hook(
+                MethodInfoWithDef.CreateAndResolveDef(typeof(PlayerHair).GetMethod("GetHairColor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)),
+                GetHairColor
+            );
+
+            h_GetTrailColor = new Hook(
+                MethodInfoWithDef.CreateAndResolveDef(typeof(Player).GetMethod("GetTrailColor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)),
+                GetTrailColor
+            );
+
+            MethodInfo m_GetHairTexture = typeof(PlayerHair).GetMethod("GetHairTexture", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (m_GetHairTexture != null) {
-                orig_GetHairTexture = m_GetHairTexture.Detour<d_GetHairTexture>(t_RainbowModule.GetMethod("GetHairTexture"));
+                h_GetHairTexture = new Hook(
+                    MethodInfoWithDef.CreateAndResolveDef(m_GetHairTexture),
+                    GetHairTexture
+                );
             }
         }
 
@@ -68,10 +79,7 @@ namespace Celeste.Mod.Rainbow {
         }
 
         public override void Unload() {
-            // Let's just hope that nothing else detoured this, as this is depth-based...
-            RuntimeDetour.Undetour(m_GetHairColor);
-            RuntimeDetour.Undetour(m_GetTrailColor);
-            RuntimeDetour.Undetour(m_GetHairTexture);
+            // TODO: Undoing hooks in HookedMethod?
         }
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
@@ -89,14 +97,14 @@ namespace Celeste.Mod.Rainbow {
             }
         }
 
-        // The delegate tells MonoMod.Detour / RuntimeDetour about the method signature.
-        // Instance (non-static) methods must become static, which means we add "this" as the first argument.
-        public delegate Color d_GetHairColor(PlayerHair self, int index);
-        // A field containing the trampoline to the original method.
-        // You don't need to care about how RuntimeDetour handles this behind the scenes.
-        public static d_GetHairColor orig_GetHairColor;
-        public static Color GetHairColor(PlayerHair self, int index) {
-            Color colorOrig = orig_GetHairColor(self, index);
+        public static object GetHairColor(HM hook, HM.OriginalMethod origM, HM.Parameters args) {
+            // C# 7:
+            var (self, index) = args.As<PlayerHair, int>();
+            // C# 6:
+            // PlayerHair self = (PlayerHair) args.RawParams[0];
+            // int index = (int) args.RawParams[1];
+
+            Color colorOrig = origM.As<Color>(args.RawParams);
             if (Settings.Mode == RainbowModMode.Off || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
                 return colorOrig;
 
@@ -139,19 +147,27 @@ namespace Celeste.Mod.Rainbow {
             return color;
         }
 
-        public delegate Color d_GetTrailColor(Player self, bool wasDashB);
-        public static d_GetTrailColor orig_GetTrailColor;
-        public static Color GetTrailColor(Player self, bool wasDashB) {
+        public static object GetTrailColor(HM hook, HM.OriginalMethod origM, HM.Parameters args) {
+            // C# 7:
+            var (self, wasDashB) = args.As<Player, bool>();
+            // C# 6:
+            // Player self = (Player) args.RawParams[0];
+            // bool wasDashB = (bool) args.RawParams[1];
+
             if ((Settings.Mode & RainbowModMode.Rainbow) != RainbowModMode.Rainbow || self.Sprite.Mode == PlayerSpriteMode.Badeline || self.Hair == null)
-                return orig_GetTrailColor(self, wasDashB);
+                return origM.As<Color>(args.RawParams);
 
             return self.Hair.GetHairColor((trailIndex++) % self.Hair.GetSprite().HairCount);
         }
 
-        public delegate MTexture d_GetHairTexture(PlayerHair self, int index);
-        public static d_GetHairTexture orig_GetHairTexture;
-        public static MTexture GetHairTexture(PlayerHair self, int index) {
-            MTexture orig = orig_GetHairTexture(self, index);
+        public static MTexture GetHairTexture(HM hook, HM.OriginalMethod origM, HM.Parameters args) {
+            // C# 7:
+            var (self, index) = args.As<PlayerHair, int>();
+            // C# 6:
+            // PlayerHair self = (PlayerHair) args.RawParams[0];
+            // int index = (int) args.RawParams[1];
+
+            MTexture orig = origM.As<MTexture>(args.RawParams);
             if ((Settings.Mode & RainbowModMode.Fox) != RainbowModMode.Fox || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
                 return orig;
 

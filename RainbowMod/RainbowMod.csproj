@@ -44,9 +44,25 @@
       <HintPath>..\Everest\lib-stripped\FNA.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="MonoMod">
-      <HintPath>..\Everest\lib\MonoMod.exe</HintPath>
+    <Reference Include="HookedMethod, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\HookedMethod.0.3.2-beta\lib\net45\HookedMethod.dll</HintPath>
       <Private>False</Private>
+    </Reference>
+    <Reference Include="Mono.Cecil, Version=0.10.0.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Mono.Cecil.0.10.0-beta7\lib\net40\Mono.Cecil.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Mono.Cecil.Mdb, Version=0.10.0.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Mono.Cecil.0.10.0-beta7\lib\net40\Mono.Cecil.Mdb.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Mono.Cecil.Pdb, Version=0.10.0.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Mono.Cecil.0.10.0-beta7\lib\net40\Mono.Cecil.Pdb.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MonoMod, Version=18.3.6645.35750, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\HookedMethod.0.3.2-beta\lib\net45\MonoMod.exe</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Steamworks.NET">
       <HintPath>..\Everest\lib-stripped\Steamworks.NET.dll</HintPath>
