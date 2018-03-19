@@ -45,7 +45,7 @@ namespace Celeste.Mod.Rainbow {
         [SettingIgnore]
         public string FoxColorDarkHex {
             get {
-                return (0x00FFFFFF & FoxColorDark.PackedValue).ToString("X6");
+                return FoxColorLight.R.ToString("X2") + FoxColorLight.G.ToString("X2") + FoxColorLight.B.ToString("X2");
             }
             set {
                 if (string.IsNullOrEmpty(value))
