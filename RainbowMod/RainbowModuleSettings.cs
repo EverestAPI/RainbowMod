@@ -32,7 +32,7 @@ namespace Celeste.Mod.Rainbow {
                 try {
                     FoxColorLight = Calc.HexToColor(value);
                 } catch (Exception e) {
-                    Logger.Log(LogLevel.Warn, "rainbowmod", "Invalid FoxColorDark!");
+                    Logger.Log(LogLevel.Warn, "rainbowmod", "Invalid FoxColorLight!");
                     e.LogDetailed();
                 }
             }
@@ -45,7 +45,7 @@ namespace Celeste.Mod.Rainbow {
         [SettingIgnore]
         public string FoxColorDarkHex {
             get {
-                return FoxColorLight.R.ToString("X2") + FoxColorLight.G.ToString("X2") + FoxColorLight.B.ToString("X2");
+                return FoxColorDark.R.ToString("X2") + FoxColorDark.G.ToString("X2") + FoxColorDark.B.ToString("X2");
             }
             set {
                 if (string.IsNullOrEmpty(value))
