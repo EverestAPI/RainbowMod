@@ -12,13 +12,15 @@ using YamlDotNet.Serialization;
 namespace Celeste.Mod.Rainbow {
     public class RainbowModuleSettings : EverestModuleSettings {
 
-        public RainbowModMode Mode { get; set; } = RainbowModMode.Off;
+        public bool RainbowEnabled { get; set; }
 
         [SettingRange(0, 20)]
         public int RainbowSpeed { get; set; } = 10;
         [YamlIgnore]
         [SettingIgnore]
         public float RainbowSpeedFactor => RainbowSpeed / 20f;
+
+        public bool FoxEnabled { get; set; }
 
         [YamlMember(Alias = "FoxColorLight")]
         [SettingIgnore]
@@ -62,12 +64,7 @@ namespace Celeste.Mod.Rainbow {
         [SettingIgnore]
         public Color FoxColorDark { get; set; }
 
-    }
-    [Flags]
-    public enum RainbowModMode {
-        Off = 0,
-        Rainbow = 1 << 0,
-        Fox = 1 << 1,
-        Both = Rainbow | Fox
+        public bool WoomyEnabled { get; set; }
+
     }
 }

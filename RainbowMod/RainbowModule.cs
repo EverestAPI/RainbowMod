@@ -79,12 +79,12 @@ namespace Celeste.Mod.Rainbow {
 
         public static Color GetHairColor(On.Celeste.PlayerHair.orig_GetHairColor orig, PlayerHair self, int index) {
             Color colorOrig = orig(self, index);
-            if (Settings.Mode == RainbowModMode.Off || !(self.Entity is Player) || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
+            if (!(self.Entity is Player) || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
                 return colorOrig;
 
             Color color = colorOrig;
 
-            if ((Settings.Mode & RainbowModMode.Fox) == RainbowModMode.Fox) {
+            if (Settings.FoxEnabled) {
                 Color colorFox;
                 if (index % 2 == 0) {
                     colorFox = Settings.FoxColorLight;
@@ -105,10 +105,10 @@ namespace Celeste.Mod.Rainbow {
                 }
             }
 
-            if ((Settings.Mode & RainbowModMode.Rainbow) == RainbowModMode.Rainbow) {
+            if (Settings.RainbowEnabled) {
                 float wave = self.GetWave() * 60f;
                 wave *= Settings.RainbowSpeedFactor;
-                Color colorRainbow = ColorFromHSV((index / (float) self.GetSprite().HairCount) * 180f + wave, 0.6f, 0.6f);
+                Color colorRainbow = ColorFromHSV((index / (float) self.GetSprite().HairCount) * 180f + wave, 0.6f, 1.0f);
                 color = new Color(
                     (color.R / 255f) * 0.3f + (colorRainbow.R / 255f) * 0.7f,
                     (color.G / 255f) * 0.3f + (colorRainbow.G / 255f) * 0.7f,
@@ -122,20 +122,23 @@ namespace Celeste.Mod.Rainbow {
         }
 
         public static Color GetTrailColor(On.Celeste.Player.orig_GetTrailColor orig, Player self, bool wasDashB) {
-            if ((Settings.Mode & RainbowModMode.Rainbow) != RainbowModMode.Rainbow || self.Sprite.Mode == PlayerSpriteMode.Badeline || self.Hair == null)
+            if (!Settings.RainbowEnabled || self.Sprite.Mode == PlayerSpriteMode.Badeline || self.Hair == null)
                 return orig(self, wasDashB);
 
             return self.Hair.GetHairColor((trailIndex++) % self.Hair.GetSprite().HairCount);
         }
 
         public static MTexture GetHairTexture(On.Celeste.PlayerHair.orig_GetHairTexture orig, PlayerHair self, int index) {
-            if ((Settings.Mode & RainbowModMode.Fox) != RainbowModMode.Fox || !(self.Entity is Player) || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
+            if (!(self.Entity is Player) || self.GetSprite().Mode == PlayerSpriteMode.Badeline)
                 return orig(self, index);
 
-            if (index == 0)
-                return FoxBangs[self.GetSprite().HairFrame];
+            if (Settings.FoxEnabled) {
+                if (index == 0)
+                    return FoxBangs[self.GetSprite().HairFrame];
+                return FoxHair[index % FoxHair.Count];
+            }
 
-            return FoxHair[index % FoxHair.Count];
+            return orig(self, index);
         }
 
         // Conversion algorithms found randomly on the net - best source for HSV <-> RGB ever:tm:
@@ -172,23 +175,23 @@ namespace Celeste.Mod.Rainbow {
             float f = hue / 60f - (float) Math.Floor(hue / 60f);
 
             value = value * 255;
-            int v = (int) (value);
-            int p = (int) (value * (1 - saturation));
-            int q = (int) (value * (1 - f * saturation));
-            int t = (int) (value * (1 - (1 - f) * saturation));
+            int v = (int) Math.Round(value);
+            int p = (int) Math.Round(value * (1 - saturation));
+            int q = (int) Math.Round(value * (1 - f * saturation));
+            int t = (int) Math.Round(value * (1 - (1 - f) * saturation));
 
             if (hi == 0)
-                return new Color(255, v, t, p);
+                return new Color(v, t, p, 255);
             else if (hi == 1)
-                return new Color(255, q, v, p);
+                return new Color(q, v, p, 255);
             else if (hi == 2)
-                return new Color(255, p, v, t);
+                return new Color(p, v, t, 255);
             else if (hi == 3)
-                return new Color(255, p, q, v);
+                return new Color(p, q, v, 255);
             else if (hi == 4)
-                return new Color(255, t, p, v);
+                return new Color(t, p, v, 255);
             else
-                return new Color(255, v, p, q);
+                return new Color(v, p, q, 255);
         }
 
     }
