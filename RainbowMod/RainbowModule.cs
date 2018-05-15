@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using On.Celeste;
 
 namespace Celeste.Mod.Rainbow {
     public class RainbowModule : EverestModule {
@@ -49,6 +50,7 @@ namespace Celeste.Mod.Rainbow {
             On.Celeste.PlayerHair.GetHairColor += GetHairColor;
             On.Celeste.Player.GetTrailColor += GetTrailColor;
             On.Celeste.PlayerHair.GetHairTexture += GetHairTexture;
+            On.Celeste.PlayerHair.Render += RenderHair;
         }
 
         public override void LoadContent(bool firstLoad) {
@@ -60,6 +62,7 @@ namespace Celeste.Mod.Rainbow {
             On.Celeste.PlayerHair.GetHairColor -= GetHairColor;
             On.Celeste.Player.GetTrailColor -= GetTrailColor;
             On.Celeste.PlayerHair.GetHairTexture -= GetHairTexture;
+            On.Celeste.PlayerHair.Render -= RenderHair;
         }
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
@@ -139,6 +142,117 @@ namespace Celeste.Mod.Rainbow {
             }
 
             return orig(self, index);
+        }
+
+        public static void RenderHair(On.Celeste.PlayerHair.orig_Render orig, PlayerHair self) {
+            if (!(self.Entity is Player) || self.GetSprite().Mode == PlayerSpriteMode.Badeline) {
+                orig(self);
+                return;
+            }
+
+            if (Settings.WoomyEnabled) {
+                PlayerSprite sprite = self.GetSprite();
+                if (!sprite.HasHair)
+                    return;
+
+                const float woomyOffs = 3f;
+                Vector2 woomyScaleMul = new Vector2(0.7f, 0.7f);
+                Vector2 woomyScaleOffs = new Vector2(-0.2f, -0.2f);
+
+                Vector2 origin = new Vector2(5f, 5f);
+                Color colorBorder = self.Border * self.Alpha;
+
+                RenderHairPlayerOutline(self);
+
+                Vector2 pos;
+                MTexture tex;
+                Color color;
+                Vector2 scale;
+
+                self.Nodes[0] = self.Nodes[0].Floor();
+
+                if (colorBorder.A > 0) {
+                    tex = self.GetHairTexture(0);
+                    scale = self.GetHairScale(0);
+                    pos = self.Nodes[0];
+                    tex.Draw(pos + new Vector2(-1f, 0f), origin, colorBorder, scale);
+                    tex.Draw(pos + new Vector2( 1f, 0f), origin, colorBorder, scale);
+                    tex.Draw(pos + new Vector2(0f, -1f), origin, colorBorder, scale);
+                    tex.Draw(pos + new Vector2( 0f, 1f), origin, colorBorder, scale);
+
+                    tex = self.GetHairTexture(2);
+                    scale = self.GetHairScale(sprite.HairCount - 2) * woomyScaleMul + woomyScaleOffs;
+                    pos = self.Nodes[0];
+                    tex.Draw(pos + new Vector2(-1f - woomyOffs,  0f), origin, colorBorder, scale);
+                    tex.Draw(pos + new Vector2( 1f - woomyOffs,  0f), origin, colorBorder, scale);
+                    tex.Draw(pos + new Vector2( 0f - woomyOffs, -1f), origin, colorBorder, scale);
+                    tex.Draw(pos + new Vector2( 0f - woomyOffs,  1f), origin, colorBorder, scale);
+                    tex.Draw(pos + new Vector2(-1f + woomyOffs,  0f), origin, colorBorder, scale);
+                    tex.Draw(pos + new Vector2( 1f + woomyOffs,  0f), origin, colorBorder, scale);
+                    tex.Draw(pos + new Vector2( 0f + woomyOffs, -1f), origin, colorBorder, scale);
+                    tex.Draw(pos + new Vector2( 0f + woomyOffs,  1f), origin, colorBorder, scale);
+
+                    for (int i = 1; i < sprite.HairCount; i++) {
+                        tex = self.GetHairTexture(i);
+                        scale = self.GetHairScale(sprite.HairCount - i - 1) * woomyScaleMul + woomyScaleOffs;
+                        pos = self.Nodes[i];
+                        tex.Draw(pos + new Vector2(-1f - woomyOffs,  0f), origin, colorBorder, scale);
+                        tex.Draw(pos + new Vector2( 1f - woomyOffs,  0f), origin, colorBorder, scale);
+                        tex.Draw(pos + new Vector2( 0f - woomyOffs, -1f), origin, colorBorder, scale);
+                        tex.Draw(pos + new Vector2( 0f - woomyOffs,  1f), origin, colorBorder, scale);
+                        tex.Draw(pos + new Vector2(-1f + woomyOffs,  0f), origin, colorBorder, scale);
+                        tex.Draw(pos + new Vector2( 1f + woomyOffs,  0f), origin, colorBorder, scale);
+                        tex.Draw(pos + new Vector2( 0f + woomyOffs, -1f), origin, colorBorder, scale);
+                        tex.Draw(pos + new Vector2( 0f + woomyOffs,  1f), origin, colorBorder, scale);
+                    }
+                }
+
+                tex = self.GetHairTexture(0);
+                color = self.GetHairColor(0);
+                scale = self.GetHairScale(0);
+                tex.Draw(self.Nodes[0], origin, color, scale);
+
+                tex = self.GetHairTexture(2);
+                color = self.GetHairColor(0);
+                scale = self.GetHairScale(sprite.HairCount - 2) * woomyScaleMul + woomyScaleOffs;
+                tex.Draw(self.Nodes[0] + new Vector2(-woomyOffs, 0f), origin, color, scale);
+                tex.Draw(self.Nodes[0] + new Vector2( woomyOffs, 0f), origin, color, scale);
+
+                for (int i = sprite.HairCount - 1; i >= 1; i--) {
+                    tex = self.GetHairTexture(i);
+                    color = self.GetHairColor(i);
+                    scale = self.GetHairScale(sprite.HairCount - i - 1) * woomyScaleMul + woomyScaleOffs;
+                    tex.Draw(self.Nodes[i] + new Vector2(-woomyOffs, 0f), origin, color, scale);
+                    tex.Draw(self.Nodes[i] + new Vector2( woomyOffs, 0f), origin, color, scale);
+                }
+
+                return;
+            }
+
+            orig(self);
+        }
+
+        private static void RenderHairPlayerOutline(PlayerHair self) {
+            PlayerSprite sprite = self.GetSprite();
+            if (!self.DrawPlayerSpriteOutline)
+                return;
+
+            Vector2 origin = sprite.Position;
+            Color color = sprite.Color;
+
+            sprite.Color = self.Border * self.Alpha;
+
+            sprite.Position = origin + new Vector2(0f, -1f);
+            sprite.Render();
+            sprite.Position = origin + new Vector2(0f, 1f);
+            sprite.Render();
+            sprite.Position = origin + new Vector2(-1f, 0f);
+            sprite.Render();
+            sprite.Position = origin + new Vector2(1f, 0f);
+            sprite.Render();
+
+            sprite.Color = color;
+            sprite.Position = origin;
         }
 
         // Conversion algorithms found randomly on the net - best source for HSV <-> RGB ever:tm:
