@@ -44,7 +44,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="MMHOOK_Celeste">
-      <HintPath>..\..\CelesteTAS-EverestInterop\MMHOOK_Celeste.dll</HintPath>
+      <HintPath>..\MMHOOK_Celeste.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Steamworks.NET">
@@ -71,7 +71,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="metadata.yaml">
+    <None Include="everest.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
