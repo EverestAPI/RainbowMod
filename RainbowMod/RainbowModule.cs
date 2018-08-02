@@ -23,6 +23,10 @@ namespace Celeste.Mod.Rainbow {
         private static List<MTexture> FoxBangs;
         private static List<MTexture> FoxHair;
 
+        private static MTexture Skateboard;
+
+        private readonly static Vector2 SkateboardPlayerOffset = new Vector2(0, -3);
+
         public RainbowModule() {
             Instance = this;
         }
@@ -51,11 +55,13 @@ namespace Celeste.Mod.Rainbow {
             On.Celeste.Player.GetTrailColor += GetTrailColor;
             On.Celeste.PlayerHair.GetHairTexture += GetHairTexture;
             On.Celeste.PlayerHair.Render += RenderHair;
+            On.Celeste.Player.Render += RenderPlayer;
         }
 
         public override void LoadContent(bool firstLoad) {
             FoxBangs = GFX.Game.GetAtlasSubtextures("characters/player/foxbangs");
             FoxHair = GFX.Game.GetAtlasSubtextures("characters/player/foxhair");
+            Skateboard = GFX.Game["characters/player/skateboard"];
         }
 
         public override void Unload() {
@@ -63,6 +69,7 @@ namespace Celeste.Mod.Rainbow {
             On.Celeste.Player.GetTrailColor -= GetTrailColor;
             On.Celeste.PlayerHair.GetHairTexture -= GetHairTexture;
             On.Celeste.PlayerHair.Render -= RenderHair;
+            On.Celeste.Player.Render -= RenderPlayer;
         }
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
@@ -150,6 +157,10 @@ namespace Celeste.Mod.Rainbow {
                 return;
             }
 
+            if (Settings.SkateboardEnabled)
+                for (int i = 0; i < self.Nodes.Count; i++)
+                    self.Nodes[i] = self.Nodes[i] + SkateboardPlayerOffset;
+
             if (Settings.WoomyEnabled) {
                 PlayerSprite sprite = self.GetSprite();
                 if (!sprite.HasHair)
@@ -230,6 +241,10 @@ namespace Celeste.Mod.Rainbow {
             }
 
             orig(self);
+
+            if (Settings.SkateboardEnabled)
+                for (int i = 0; i < self.Nodes.Count; i++)
+                    self.Nodes[i] = self.Nodes[i] - SkateboardPlayerOffset;
         }
 
         private static void RenderHairPlayerOutline(PlayerHair self) {
@@ -253,6 +268,26 @@ namespace Celeste.Mod.Rainbow {
 
             sprite.Color = color;
             sprite.Position = origin;
+        }
+
+        public static void RenderPlayer(On.Celeste.Player.orig_Render orig, Player self) {
+            if (!Settings.SkateboardEnabled) {
+                orig(self);
+                return;
+            }
+
+            Vector2 renderPos = self.Sprite.RenderPosition;
+
+            self.Sprite.RenderPosition += SkateboardPlayerOffset;
+
+            orig(self);
+            Skateboard.Draw(
+                renderPos.Floor() + new Vector2(self.Facing == Facings.Left ? 9 : -8, -4),
+                Vector2.Zero, Color.White,
+                new Vector2(self.Facing == Facings.Left ? -1 : 1, 1)
+            );
+
+            self.Sprite.RenderPosition -= SkateboardPlayerOffset;
         }
 
         // Conversion algorithms found randomly on the net - best source for HSV <-> RGB ever:tm:

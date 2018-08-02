@@ -66,5 +66,7 @@ namespace Celeste.Mod.Rainbow {
 
         public bool WoomyEnabled { get; set; }
 
+        public bool SkateboardEnabled { get; set; }
+
     }
 }
