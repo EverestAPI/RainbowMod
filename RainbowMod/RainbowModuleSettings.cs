@@ -68,5 +68,7 @@ namespace Celeste.Mod.Rainbow {
 
         public bool SkateboardEnabled { get; set; }
 
+        public bool DuckToDabEnabled { get; set; }
+
     }
 }

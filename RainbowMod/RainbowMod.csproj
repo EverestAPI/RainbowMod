@@ -97,6 +97,9 @@
     <EmbeddedResource Include="Content\Graphics\Atlases\Gameplay\characters\player\skateboard.png">
       <LogicalName>Content\Graphics\Atlases\Gameplay\characters\player\skateboard.png</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="Content\Graphics\Atlases\Gameplay\characters\player\dab.png">
+      <LogicalName>Content\Graphics\Atlases\Gameplay\characters\player\dab.png</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

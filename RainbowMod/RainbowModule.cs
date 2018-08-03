@@ -24,8 +24,10 @@ namespace Celeste.Mod.Rainbow {
         private static List<MTexture> FoxHair;
 
         private static MTexture Skateboard;
-
         private readonly static Vector2 SkateboardPlayerOffset = new Vector2(0, -3);
+
+        private static MTexture Dab;
+        private readonly static Vector2 DabPlayerOffset = new Vector2(0, -5);
 
         public RainbowModule() {
             Instance = this;
@@ -56,12 +58,14 @@ namespace Celeste.Mod.Rainbow {
             On.Celeste.PlayerHair.GetHairTexture += GetHairTexture;
             On.Celeste.PlayerHair.Render += RenderHair;
             On.Celeste.Player.Render += RenderPlayer;
+            On.Celeste.PlayerSprite.Render += RenderPlayerSprite;
         }
 
         public override void LoadContent(bool firstLoad) {
             FoxBangs = GFX.Game.GetAtlasSubtextures("characters/player/foxbangs");
             FoxHair = GFX.Game.GetAtlasSubtextures("characters/player/foxhair");
             Skateboard = GFX.Game["characters/player/skateboard"];
+            Dab = GFX.Game["characters/player/dab"];
         }
 
         public override void Unload() {
@@ -70,6 +74,7 @@ namespace Celeste.Mod.Rainbow {
             On.Celeste.PlayerHair.GetHairTexture -= GetHairTexture;
             On.Celeste.PlayerHair.Render -= RenderHair;
             On.Celeste.Player.Render -= RenderPlayer;
+            On.Celeste.PlayerSprite.Render -= RenderPlayerSprite;
         }
 
         public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
@@ -152,7 +157,8 @@ namespace Celeste.Mod.Rainbow {
         }
 
         public static void RenderHair(On.Celeste.PlayerHair.orig_Render orig, PlayerHair self) {
-            if (!(self.Entity is Player) || self.GetSprite().Mode == PlayerSpriteMode.Badeline) {
+            Player player = self.Entity as Player;
+            if (player == null || self.GetSprite().Mode == PlayerSpriteMode.Badeline) {
                 orig(self);
                 return;
             }
@@ -160,6 +166,9 @@ namespace Celeste.Mod.Rainbow {
             if (Settings.SkateboardEnabled)
                 for (int i = 0; i < self.Nodes.Count; i++)
                     self.Nodes[i] = self.Nodes[i] + SkateboardPlayerOffset;
+            if (Settings.DuckToDabEnabled && player.Ducking)
+                for (int i = 0; i < self.Nodes.Count; i++)
+                    self.Nodes[i] = self.Nodes[i] + DabPlayerOffset;
 
             if (Settings.WoomyEnabled) {
                 PlayerSprite sprite = self.GetSprite();
@@ -237,14 +246,18 @@ namespace Celeste.Mod.Rainbow {
                     tex.Draw(self.Nodes[i] + new Vector2( woomyOffs, 0f), origin, color, scale);
                 }
 
-                return;
+                goto End;
             }
 
             orig(self);
 
+            End:
             if (Settings.SkateboardEnabled)
                 for (int i = 0; i < self.Nodes.Count; i++)
                     self.Nodes[i] = self.Nodes[i] - SkateboardPlayerOffset;
+            if (Settings.DuckToDabEnabled && player.Ducking)
+                for (int i = 0; i < self.Nodes.Count; i++)
+                    self.Nodes[i] = self.Nodes[i] - DabPlayerOffset;
         }
 
         private static void RenderHairPlayerOutline(PlayerHair self) {
@@ -271,23 +284,46 @@ namespace Celeste.Mod.Rainbow {
         }
 
         public static void RenderPlayer(On.Celeste.Player.orig_Render orig, Player self) {
-            if (!Settings.SkateboardEnabled) {
+            Vector2 renderPos = self.Sprite.RenderPosition;
+
+            if (Settings.SkateboardEnabled)
+                self.Sprite.RenderPosition += SkateboardPlayerOffset;
+            if (Settings.DuckToDabEnabled && self.Ducking)
+                self.Sprite.RenderPosition += DabPlayerOffset;
+
+            orig(self);
+
+            if (Settings.SkateboardEnabled) {
+                Skateboard.Draw(
+                    renderPos.Floor() + new Vector2(self.Facing == Facings.Left ? 9 : -8, -4),
+                    Vector2.Zero, Color.White,
+                    new Vector2(self.Facing == Facings.Left ? -1 : 1, 1)
+                );
+            }
+
+            if (Settings.SkateboardEnabled)
+                self.Sprite.RenderPosition -= SkateboardPlayerOffset;
+            if (Settings.DuckToDabEnabled && self.Ducking)
+                self.Sprite.RenderPosition -= DabPlayerOffset;
+        }
+
+        public static void RenderPlayerSprite(On.Celeste.PlayerSprite.orig_Render orig, PlayerSprite self) {
+            Player player = self.Entity as Player;
+            if (player == null || self.Mode == PlayerSpriteMode.Badeline) {
                 orig(self);
                 return;
             }
 
-            Vector2 renderPos = self.Sprite.RenderPosition;
-
-            self.Sprite.RenderPosition += SkateboardPlayerOffset;
+            if (Settings.DuckToDabEnabled && player.Ducking) {
+                Dab.Draw(
+                    self.RenderPosition.Floor() + new Vector2(player.Facing == Facings.Left ? 6 : -6, -7),
+                    Vector2.Zero, Color.White,
+                    self.Scale
+                );
+                return;
+            }
 
             orig(self);
-            Skateboard.Draw(
-                renderPos.Floor() + new Vector2(self.Facing == Facings.Left ? 9 : -8, -4),
-                Vector2.Zero, Color.White,
-                new Vector2(self.Facing == Facings.Left ? -1 : 1, 1)
-            );
-
-            self.Sprite.RenderPosition -= SkateboardPlayerOffset;
         }
 
         // Conversion algorithms found randomly on the net - best source for HSV <-> RGB ever:tm:
