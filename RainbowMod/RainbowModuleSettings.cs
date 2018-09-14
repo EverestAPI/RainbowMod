@@ -70,5 +70,7 @@ namespace Celeste.Mod.Rainbow {
 
         public bool DuckToDabEnabled { get; set; }
 
+        public bool DuckToSneezeEnabled { get; set; }
+
     }
 }

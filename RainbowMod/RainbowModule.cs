@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using On.Celeste;
+using Mono.Cecil.Cil;
 
 namespace Celeste.Mod.Rainbow {
     public class RainbowModule : EverestModule {
@@ -53,6 +54,75 @@ namespace Celeste.Mod.Rainbow {
         }
 
         public override void Load() {
+            // This is a runtime mod, but we can still manipulate the game.
+
+#if false // Set this to true if you want to demo new HookGen features.
+
+            // Let's hook Celeste.Player.GetTrailColor
+            On.Celeste.Player.GetTrailColor += (orig, player, wasDashB) => {
+                Console.WriteLine("1 - Hello, World!");
+
+                // Get the "original" color and manipulate it.
+                // This step is optional - we can return anything we want.
+                // We can also pass anything to the orig method.
+                Color color = orig(player, wasDashB);
+
+                // If the player is facing left, display a modified color.
+                if (player.Facing == Facings.Left)
+                    return new Color(0xFF, color.G, color.B, color.A);
+
+                return color;
+            };
+
+            IL.Celeste.Player.GetTrailColor += (body, il) => {
+                // Let'd dump the method before manipulating it.
+                Console.WriteLine("MANIPULATING " + body.Method);
+                foreach (Instruction i in body.Instructions)
+                    Console.WriteLine(i);
+
+                int index = 0;
+
+                // Insert Console.WriteLine(...) at the beginning.
+                il.Emit(ref index, OpCodes.Ldstr, "2 - Hello, IL manipulation!");
+                il.Emit(ref index, OpCodes.Call, typeof(Console).GetMethod("WriteLine", new Type[] { typeof(string) }));
+
+                // After that, emit an inline delegate call.
+                il.EmitDelegateCall(ref index, () => {
+                    Console.WriteLine("3 - Hello, C# code in IL!");
+                });
+
+                // Note that we can also insert any arbitrary delegate anywhere.
+                // We know that the original method ends with ldloc.0, then ret
+                // Let's wrap ldloc.0 with a delegate call, then invoke it before ret.
+                if (il.GotoNext(ref index, (instrs, i) =>
+                    instrs[i + 0].OpCode == OpCodes.Ldloc_0 &&
+                    instrs[i + 1].OpCode == OpCodes.Ret
+                )) {
+                    // Note that we also need to update any branches pointing towards ldloc.0
+                    // We only need to do this because we know that there's at least one jump to ldloc.0
+                    int indexPush = index;
+                    int delegateID = il.EmitDelegatePush<Func<Color, Color>>(ref index, color => {
+                        Console.WriteLine("4 - Hello, arbitrary C# code in IL!");
+                        color.G = 0xFF;
+                        return color;
+                    });
+                    il.UpdateBranches(index, indexPush);
+
+                    index += 1; // Skip ldloc.0
+
+                    il.EmitDelegateInvoke(ref index, delegateID);
+                    // The delegate returns a modified color, which gets returned by the following ret instruction.
+
+                } else {
+                    // If we know that there are multiple versions, we could chain them via else-ifs.
+                    // Otherwise, do nothing (or throw an exception).
+                }
+
+                // Leave the rest of the method unmodified.
+            };
+
+#endif
+
             On.Celeste.PlayerHair.GetHairColor += GetHairColor;
             On.Celeste.Player.GetTrailColor += GetTrailColor;
             On.Celeste.PlayerHair.GetHairTexture += GetHairTexture;
