@@ -227,6 +227,7 @@ namespace Celeste.Mod.Rainbow {
         }
 
         public static void RenderHair(On.Celeste.PlayerHair.orig_Render orig, PlayerHair self) {
+            if (Settings.BaldelineEnabled) return;
             Player player = self.Entity as Player;
             if (player == null || self.GetSprite().Mode == PlayerSpriteMode.Badeline) {
                 orig(self);
