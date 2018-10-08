@@ -11,7 +11,6 @@ using YamlDotNet.Serialization;
 
 namespace Celeste.Mod.Rainbow {
     public class RainbowModuleSettings : EverestModuleSettings {
-
         public bool RainbowEnabled { get; set; }
 
         [SettingRange(0, 20)]
@@ -72,5 +71,6 @@ namespace Celeste.Mod.Rainbow {
 
         public bool DuckToSneezeEnabled { get; set; }
 
+        public bool BaldelineEnabled { get; set; }
     }
 }
